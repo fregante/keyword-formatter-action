@@ -1,0 +1,25 @@
+name: Keyword Formatter
+description: Formats keywords in titles of issues and PRs.
+branding:
+  icon: feather
+  color: yellow
+inputs:
+  keywords:
+    description: "What to search in titles. Comma-separated or line-separated, surrounding spaces are ignored. If it starts with a /, it is treated as a regular expression. (example: fix, bug, feat)"
+  keywords-path:
+    description: The path to read the keywords from. It can be a file (comma-separated or line-separated) or a directory, where all the file *names* will be used (without the extension)
+  dry-run:
+    description: If true, show what changes would be made without actually making them
+    default: false
+  prefix:
+    description: Any prefix to preserve, such as `feat:` or `name/`. It will be wrapped in backticks together with the keyword.
+  token:
+    description: 'The automatically-generated token, set this to \$\{\{ secrets.GITHUB_TOKEN \}\}'
+outputs:
+  changed:
+    description: Whether the title was changed
+  title:
+    description: The title after the formatting or the original title if unchanged
+runs:
+  using: node22
+  main: distribution/index.js

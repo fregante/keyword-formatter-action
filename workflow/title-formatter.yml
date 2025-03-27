@@ -1,0 +1,20 @@
+name: Title cleanup
+
+on:
+  pull_request_target:
+    types: [opened, edited]
+  issues:
+    types: [opened, edited]
+
+jobs:
+  Label:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Turn any "backticks" mention into "`backticks`"
+        uses: fregante/keyword-formatter-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          keywords: backticks
