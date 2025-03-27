@@ -44,6 +44,13 @@ describe('formatTitle', () => {
 		expect(result).toBe('`hello`: world');
 	});
 
+	it('preserves single quotes following keywords', () => {
+		const result = formatTitle('dude\'s world', {
+			keywords: ['dude'],
+		});
+		expect(result).toBe('`dude`\'s world');
+	});
+
 	it('preserves whitespace', () => {
 		const result = formatTitle('  hello   world  ', {
 			keywords: ['hello', 'world'],
@@ -85,5 +92,13 @@ describe('formatTitle', () => {
 			keywords: ['hello'],
 		});
 		expect(result).toBe('You had me `at hello`');
+	});
+
+	// TODO: https://github.com/fregante/keyword-formatter-action/issues/1
+	it.fails('should not wrap format twice even if the the word is in the middle of formatted string', () => {
+		const result = formatTitle('You had `me at hello`', {
+			keywords: ['at'],
+		});
+		expect(result).toBe('You had `me at hello`');
 	});
 });

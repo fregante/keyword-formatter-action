@@ -18,3 +18,9 @@ jobs:
         with:
           keywords: passiflora, cumulonimbus, amorphophallus
           token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./
+        name: Local action repeated check (should not override)
+        with:
+          keywords: kunyit
+          prefix: asem
+          token: ${{ secrets.GITHUB_TOKEN }}

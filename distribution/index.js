@@ -57865,17 +57865,19 @@ function readEnv() {
 		owner,
 		repo,
 		number,
-		inputs: getInputs(),
 	};
 }
 
 async function run() {
-	const {owner, repo, number, inputs} = readEnv();
+	const {owner, repo, number} = readEnv();
 	const title = await getCurrentTitle({owner, repo, number});
 	(0,core.startGroup)('Environment');
-	(0,core.info)(JSON.stringify({inputs, processedInputs}, null, 2));
+	(0,core.info)(JSON.stringify({
+		owner, repo, number, title,
+	}, null, 2));
 	(0,core.endGroup)();
 
+	const inputs = getInputs();
 	const processedInputs = processInputs(inputs);
 	(0,core.startGroup)('Inputs');
 	(0,core.info)(JSON.stringify({inputs, processedInputs}, null, 2));

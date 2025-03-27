@@ -39,17 +39,19 @@ function readEnv() {
 		owner,
 		repo,
 		number,
-		inputs: getInputs(),
 	};
 }
 
 async function run() {
-	const {owner, repo, number, inputs} = readEnv();
+	const {owner, repo, number} = readEnv();
 	const title = await getCurrentTitle({owner, repo, number});
 	startGroup('Environment');
-	info(JSON.stringify({inputs, processedInputs}, null, 2));
+	info(JSON.stringify({
+		owner, repo, number, title,
+	}, null, 2));
 	endGroup();
 
+	const inputs = getInputs();
 	const processedInputs = processInputs(inputs);
 	startGroup('Inputs');
 	info(JSON.stringify({inputs, processedInputs}, null, 2));
