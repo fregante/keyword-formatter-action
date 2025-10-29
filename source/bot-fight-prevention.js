@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import * as cache from '@actions/cache';
 import {info, warning} from '@actions/core';
 
@@ -18,7 +20,6 @@ export async function getCacheData(owner, repo, number) {
 			return {doNotTouch: false, lastBotTitle: null};
 		}
 
-		const fs = await import('node:fs');
 		const cacheFile = cachePaths[0];
 		if (fs.existsSync(cacheFile)) {
 			const data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
@@ -47,8 +48,6 @@ export async function saveCacheData(owner, repo, number, data) {
 	const cachePaths = ['/tmp/keyword-formatter-cache'];
 
 	try {
-		const fs = await import('node:fs');
-		const {default: path} = await import('node:path');
 		const cacheFile = cachePaths[0];
 
 		// Ensure directory exists

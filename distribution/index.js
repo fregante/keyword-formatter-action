@@ -87780,13 +87780,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:events"
 
 /***/ }),
 
-/***/ 3024:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-
-/***/ }),
-
 /***/ 7067:
 /***/ ((module) => {
 
@@ -87819,13 +87812,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:net");
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:os");
-
-/***/ }),
-
-/***/ 6760:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 
 /***/ }),
 
@@ -98645,64 +98631,6 @@ module.exports = parseParams
 /******/ }
 /******/ 
 /************************************************************************/
-/******/ /* webpack/runtime/create fake namespace object */
-/******/ (() => {
-/******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
-/******/ 	var leafPrototypes;
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 16: return value when it's Promise-like
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__nccwpck_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = this(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if(typeof value === 'object' && value) {
-/******/ 			if((mode & 4) && value.__esModule) return value;
-/******/ 			if((mode & 16) && typeof value.then === 'function') return value;
-/******/ 		}
-/******/ 		var ns = Object.create(null);
-/******/ 		__nccwpck_require__.r(ns);
-/******/ 		var def = {};
-/******/ 		leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 		for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
-/******/ 			Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
-/******/ 		}
-/******/ 		def['default'] = () => (value);
-/******/ 		__nccwpck_require__.d(ns, def);
-/******/ 		return ns;
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/define property getters */
-/******/ (() => {
-/******/ 	// define getter functions for harmony exports
-/******/ 	__nccwpck_require__.d = (exports, definition) => {
-/******/ 		for(var key in definition) {
-/******/ 			if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 			}
-/******/ 		}
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/hasOwnProperty shorthand */
-/******/ (() => {
-/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/make namespace object */
-/******/ (() => {
-/******/ 	// define __esModule on exports
-/******/ 	__nccwpck_require__.r = (exports) => {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/ })();
-/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
@@ -98710,8 +98638,8 @@ module.exports = parseParams
 /************************************************************************/
 var __webpack_exports__ = {};
 
-// EXTERNAL MODULE: external "node:fs"
-var external_node_fs_ = __nccwpck_require__(3024);
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 // EXTERNAL MODULE: external "node:process"
 var external_node_process_ = __nccwpck_require__(1708);
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
@@ -102336,8 +102264,8 @@ function formatTitle(title, {
 	return newTitle;
 }
 
-// EXTERNAL MODULE: external "node:path"
-var external_node_path_ = __nccwpck_require__(6760);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 ;// CONCATENATED MODULE: ./source/inputs.js
 
 
@@ -102380,16 +102308,16 @@ function processInputs({
 			throw new Error('No keywords found in `keywords`' + (keywordsPath ? ` or \`keywords-path: "${keywordsPath}"\`` : ''));
 		}
 	} else if (keywordsPath) {
-		const stats = external_node_fs_.statSync(keywordsPath);
+		const stats = external_node_fs_namespaceObject.statSync(keywordsPath);
 		if (stats.isDirectory()) {
-			keywords = external_node_fs_.readdirSync(keywordsPath)
-				.map(file => external_node_path_.basename(file).split('.')[0]);
+			keywords = external_node_fs_namespaceObject.readdirSync(keywordsPath)
+				.map(file => external_node_path_namespaceObject.basename(file).split('.')[0]);
 
 			if (keywords.length === 0) {
 				throw new Error('The directory is empty: ' + keywordsPath);
 			}
 		} else if (stats.isFile()) {
-			keywords = parseKeywords(external_node_fs_.readFileSync(keywordsPath, 'utf8'));
+			keywords = parseKeywords(external_node_fs_namespaceObject.readFileSync(keywordsPath, 'utf8'));
 
 			if (keywords.length === 0) {
 				throw new Error('The file is empty: ' + keywordsPath);
@@ -102418,6 +102346,8 @@ var cache = __nccwpck_require__(5116);
 
 
 
+
+
 /**
  * Gets cache data for a specific issue/PR
  * @param {string} owner - Repository owner
@@ -102435,10 +102365,9 @@ async function getCacheData(owner, repo, number) {
 			return {doNotTouch: false, lastBotTitle: null};
 		}
 
-		const fs = await Promise.resolve(/* import() */).then(__nccwpck_require__.t.bind(__nccwpck_require__, 3024, 19));
 		const cacheFile = cachePaths[0];
-		if (fs.existsSync(cacheFile)) {
-			const data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+		if (external_node_fs_namespaceObject.existsSync(cacheFile)) {
+			const data = JSON.parse(external_node_fs_namespaceObject.readFileSync(cacheFile, 'utf8'));
 			return {
 				doNotTouch: data.doNotTouch ?? false,
 				lastBotTitle: data.lastBotTitle ?? null,
@@ -102464,17 +102393,15 @@ async function saveCacheData(owner, repo, number, data) {
 	const cachePaths = ['/tmp/keyword-formatter-cache'];
 
 	try {
-		const fs = await Promise.resolve(/* import() */).then(__nccwpck_require__.t.bind(__nccwpck_require__, 3024, 19));
-		const {default: path} = await Promise.resolve(/* import() */).then(__nccwpck_require__.t.bind(__nccwpck_require__, 6760, 19));
 		const cacheFile = cachePaths[0];
 
 		// Ensure directory exists
-		const directory = path.dirname(cacheFile);
-		if (!fs.existsSync(directory)) {
-			fs.mkdirSync(directory, {recursive: true});
+		const directory = external_node_path_namespaceObject.dirname(cacheFile);
+		if (!external_node_fs_namespaceObject.existsSync(directory)) {
+			external_node_fs_namespaceObject.mkdirSync(directory, {recursive: true});
 		}
 
-		fs.writeFileSync(cacheFile, JSON.stringify(data), 'utf8');
+		external_node_fs_namespaceObject.writeFileSync(cacheFile, JSON.stringify(data), 'utf8');
 		await cache.saveCache(cachePaths, cacheKey);
 		(0,core.info)(`Cache saved for ${owner}/${repo}#${number}`);
 	} catch (error) {
@@ -102516,7 +102443,7 @@ function didUserUndoBotChange(currentTitle, lastBotTitle, formattedTitle) {
 
 
 
-const source_event = JSON.parse(external_node_fs_.readFileSync(external_node_process_.env.GITHUB_EVENT_PATH));
+const source_event = JSON.parse(external_node_fs_namespaceObject.readFileSync(external_node_process_.env.GITHUB_EVENT_PATH));
 
 const octokit = new dist_bundle_Octokit();
 
