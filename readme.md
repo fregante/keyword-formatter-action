@@ -22,6 +22,9 @@ npx -y ghat fregante/keyword-formatter-action/workflow
 > [!NOTE]
 > The action only formats standalone words. If you set `keywords: "fix"`, it won't match `fixed` nor `fix-stuff`.
 
+> [!TIP]
+> The action automatically prevents bot fights. If a user manually undoes the bot's formatting (removes the backticks), the bot will remember and never touch that title again. This prevents infinite loops where the bot and user fight over formatting.
+
 ## Usage
 
 ```yaml
