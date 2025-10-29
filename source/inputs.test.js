@@ -25,6 +25,27 @@ describe('parseKeywords', () => {
 		const result = parseKeywords(' fix, feat\n bug , chore ');
 		expect(result).toEqual(['fix', 'feat', 'bug', 'chore']);
 	});
+
+	it('should throw on empty regex pattern', () => {
+		expect(() => parseKeywords('//')).toThrow('Regex pattern cannot be empty');
+	});
+
+	it('should throw on invalid regex pattern', () => {
+		expect(() => parseKeywords('/[unclosed/')).toThrow('Invalid regex pattern');
+	});
+
+	it('should throw on potentially unsafe regex pattern with nested quantifiers', () => {
+		expect(() => parseKeywords('/(a+)+/')).toThrow('Potentially unsafe regex pattern');
+	});
+
+	it('should throw on null or undefined keywords', () => {
+		expect(() => parseKeywords(null)).toThrow('Keywords must be a non-empty string');
+		expect(() => parseKeywords(undefined)).toThrow('Keywords must be a non-empty string');
+	});
+
+	it('should throw on non-string keywords', () => {
+		expect(() => parseKeywords(123)).toThrow('Keywords must be a non-empty string');
+	});
 });
 
 describe('processInputs', () => {
@@ -151,7 +172,7 @@ describe('processInputs', () => {
 	it('throws when keywordsPath doesn\'t exist', () => {
 		expect(() => processInputs({
 			keywordsPath: 'fixtures/doesnotexist',
-		})).toThrow('ENOENT: no such file or directory, stat \'fixtures/doesnotexist\'');
+		})).toThrow('Keywords path does not exist');
 	});
 
 	it('throws when keywordsPath is an empty file', () => {
@@ -165,5 +186,32 @@ describe('processInputs', () => {
 		expect(() => processInputs({
 			keywordsPath: 'fixtures/empty-directory',
 		})).toThrow('The directory is empty: fixtures/empty-directory');
+	});
+
+	it('throws when prefix is too long', () => {
+		expect(() => processInputs({
+			keywords: 'fix',
+			prefix: 'a'.repeat(101),
+		})).toThrow('Prefix is too long');
+	});
+
+	it('throws when there are too many keywords', () => {
+		const tooManyKeywords = Array.from({length: 1001}, (_, i) => `keyword${i}`).join(',');
+		expect(() => processInputs({
+			keywords: tooManyKeywords,
+		})).toThrow('Too many keywords');
+	});
+
+	it('handles regex keywords without throwing on deduplication', () => {
+		const result = processInputs({
+			keywords: '/fix|feat/',
+		});
+		expect(result.keywords).toBeInstanceOf(RegExp);
+	});
+
+	it('wraps parse errors with context', () => {
+		expect(() => processInputs({
+			keywords: '/[invalid/',
+		})).toThrow('Failed to parse keywords');
 	});
 });
