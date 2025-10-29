@@ -57759,9 +57759,60 @@ const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(impo
 
 
 
+/**
+ * Validates a regex pattern for potential ReDoS vulnerabilities
+ * Checks for common ReDoS patterns like nested quantifiers
+ */
+function validateRegexPattern(pattern) {
+	// Check for nested quantifiers which can cause catastrophic backtracking
+	const dangerousPatterns = [
+		/(\*|\+|{[^}]*})\s*(\*|\+|{[^}]*})/g, // Nested quantifiers like *+
+		/(\(.*\*.*\))\s*(\*|\+|{[^}]*})/g, // Quantified groups with stars
+		/\([^)]*(\*|\+|{[^}]*})\)(\*|\+|{[^}]*})/g, // Groups with quantifiers that are themselves quantified
+	];
+
+	for (const dangerous of dangerousPatterns) {
+		if (dangerous.test(pattern)) {
+			throw new Error(`Potentially unsafe regex pattern detected: ${pattern}. Avoid nested quantifiers that can cause performance issues.`);
+		}
+	}
+
+	// Test the regex with a timeout simulation
+	try {
+		const testRegex = new RegExp(pattern, 'g');
+		// Test with a potentially problematic string
+		const testString = 'a'.repeat(100);
+		testRegex.test(testString);
+	} catch (error) {
+		throw new Error(`Invalid regex pattern: ${pattern}. ${error.message}`);
+	}
+}
+
 function parseKeywords(keywords) {
-	if (keywords.startsWith('/') && keywords.endsWith('/')) {
-		return new RegExp(keywords.slice(1, -1), 'g');
+	if (!keywords || typeof keywords !== 'string') {
+		throw new Error('Keywords must be a non-empty string');
+	}
+
+	// Trim whitespace and check if empty
+	const trimmed = keywords.trim();
+	if (trimmed.length === 0) {
+		throw new Error('Keywords cannot be empty');
+	}
+
+	if (trimmed.startsWith('/') && trimmed.endsWith('/')) {
+		const pattern = trimmed.slice(1, -1);
+
+		if (pattern.length === 0) {
+			throw new Error('Regex pattern cannot be empty');
+		}
+
+		validateRegexPattern(pattern);
+
+		try {
+			return new RegExp(pattern, 'g');
+		} catch (error) {
+			throw new Error(`Invalid regex pattern: ${pattern}. ${error.message}`);
+		}
 	}
 
 	return keywords.split(/[\n,]+/)
@@ -57791,24 +57842,70 @@ function processInputs({
 	keywords, keywordsPath, prefix, ...inputs
 }) {
 	if (keywords) {
-		keywords = parseKeywords(keywords);
-		if (keywords.length === 0) {
+		try {
+			keywords = parseKeywords(keywords);
+		} catch (error) {
+			throw new Error(`Failed to parse keywords: ${error.message}`);
+		}
+
+		if (keywords.length === 0 && !(keywords instanceof RegExp)) {
 			throw new Error('No keywords found in `keywords`' + (keywordsPath ? ` or \`keywords-path: "${keywordsPath}"\`` : ''));
 		}
 	} else if (keywordsPath) {
-		const stats = external_node_fs_namespaceObject.statSync(keywordsPath);
-		if (stats.isDirectory()) {
-			keywords = external_node_fs_namespaceObject.readdirSync(keywordsPath)
-				.map(file => external_node_path_namespaceObject.basename(file).split('.')[0]);
+		let stats;
+		try {
+			stats = external_node_fs_namespaceObject.statSync(keywordsPath);
+		} catch (error) {
+			if (error.code === 'ENOENT') {
+				throw new Error(`Keywords path does not exist: ${keywordsPath}`);
+			}
 
-			if (keywords.length === 0) {
-				throw new Error('The directory is empty: ' + keywordsPath);
+			if (error.code === 'EACCES') {
+				throw new Error(`Permission denied reading keywords path: ${keywordsPath}`);
+			}
+
+			throw error;
+		}
+
+		if (stats.isDirectory()) {
+			try {
+				keywords = external_node_fs_namespaceObject.readdirSync(keywordsPath)
+					.map(file => external_node_path_namespaceObject.basename(file).split('.')[0])
+					.filter(Boolean);
+
+				if (keywords.length === 0) {
+					throw new Error('The directory is empty: ' + keywordsPath);
+				}
+			} catch (error) {
+				if (error.message.includes('empty')) {
+					throw error;
+				}
+
+				throw new Error(`Failed to read directory: ${keywordsPath}. ${error.message}`);
 			}
 		} else if (stats.isFile()) {
-			keywords = parseKeywords(external_node_fs_namespaceObject.readFileSync(keywordsPath, 'utf8'));
+			try {
+				const fileContent = external_node_fs_namespaceObject.readFileSync(keywordsPath, 'utf8');
 
-			if (keywords.length === 0) {
-				throw new Error('The file is empty: ' + keywordsPath);
+				if (!fileContent || fileContent.trim().length === 0) {
+					throw new Error('The file is empty: ' + keywordsPath);
+				}
+
+				keywords = parseKeywords(fileContent);
+
+				if (keywords.length === 0 && !(keywords instanceof RegExp)) {
+					throw new Error('The file is empty: ' + keywordsPath);
+				}
+			} catch (error) {
+				if (error.message.includes('empty')) {
+					throw error;
+				}
+
+				if (error.message.includes('Failed to parse keywords')) {
+					throw error;
+				}
+
+				throw new Error(`Failed to read file: ${keywordsPath}. ${error.message}`);
 			}
 		} else {
 			throw new Error(`Invalid keywords path: ${keywordsPath}`);
@@ -57818,8 +57915,20 @@ function processInputs({
 	// Normalize prefix
 	prefix = prefix && typeof prefix === 'string' ? prefix : undefined;
 
-	// Deduplicate
-	keywords = [...new Set(keywords)];
+	// Validate prefix if provided
+	if (prefix !== undefined && prefix.length > 100) {
+		throw new Error('Prefix is too long (max 100 characters)');
+	}
+
+	// Deduplicate keywords (but not for RegExp)
+	if (!(keywords instanceof RegExp)) {
+		keywords = [...new Set(keywords)];
+
+		// Validate keyword count
+		if (keywords.length > 1000) {
+			throw new Error(`Too many keywords (${keywords.length}). Maximum is 1000.`);
+		}
+	}
 
 	return {
 		...inputs,
@@ -57840,13 +57949,50 @@ const source_event = JSON.parse(external_node_fs_namespaceObject.readFileSync(ex
 
 const octokit = new dist_bundle_Octokit();
 
+/**
+ * Retry a function with exponential backoff
+ * @param {Function} function_ - The async function to retry
+ * @param {number} maxRetries - Maximum number of retries
+ * @param {number} initialDelay - Initial delay in milliseconds
+ */
+async function withRetry(function_, maxRetries = 3, initialDelay = 1000) {
+	let lastError;
+
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		try {
+			// eslint-disable-next-line no-await-in-loop
+			return await function_();
+		} catch (error) {
+			lastError = error;
+
+			// Don't retry on client errors (4xx), only on server errors (5xx) or network issues
+			if (error.status && error.status >= 400 && error.status < 500) {
+				throw error;
+			}
+
+			if (attempt < maxRetries) {
+				const delay = initialDelay * (2 ** attempt);
+				(0,core.warning)(`Attempt ${attempt + 1} failed: ${error.message}. Retrying in ${delay}ms...`);
+				// eslint-disable-next-line no-await-in-loop
+				await new Promise(resolve => {
+					setTimeout(resolve, delay);
+				});
+			}
+		}
+	}
+
+	throw lastError;
+}
+
 async function getCurrentTitle({owner, repo, number}) {
 	// Read the title from via API to support multiple actions in a row making changes to the title
-	const {data} = await octokit.rest.issues.get({
-		owner, repo, issue_number: number,
-	});
+	return withRetry(async () => {
+		const {data} = await octokit.rest.issues.get({
+			owner, repo, issue_number: number,
+		});
 
-	return data.title;
+		return data.title;
+	});
 }
 
 function readEnv() {
@@ -57869,44 +58015,83 @@ function readEnv() {
 }
 
 async function run() {
-	const {owner, repo, number} = readEnv();
-	const title = await getCurrentTitle({owner, repo, number});
-	(0,core.startGroup)('Environment');
-	(0,core.info)(JSON.stringify({
-		owner, repo, number, title,
-	}, null, 2));
-	(0,core.endGroup)();
+	try {
+		const {owner, repo, number} = readEnv();
+		const title = await getCurrentTitle({owner, repo, number});
 
-	const inputs = getInputs();
-	const processedInputs = processInputs(inputs);
-	(0,core.startGroup)('Inputs');
-	(0,core.info)(JSON.stringify({inputs, processedInputs}, null, 2));
-	(0,core.endGroup)();
+		// Validate title
+		if (!title || typeof title !== 'string') {
+			throw new Error('Invalid title received from GitHub API');
+		}
 
-	const newTitle = formatTitle(title, processedInputs);
-	const changeNeeded = title !== newTitle;
-	(0,core.setOutput)('title', newTitle);
-	(0,core.setOutput)('changed', changeNeeded);
+		if (title.length > 256) {
+			(0,core.warning)(`Title is very long (${title.length} characters). This may cause issues.`);
+		}
 
-	(0,core.info)(`Title: "${newTitle}"`);
+		(0,core.startGroup)('Environment');
+		(0,core.info)(JSON.stringify({
+			owner, repo, number, title,
+		}, null, 2));
+		(0,core.endGroup)();
 
-	if (title === newTitle) {
-		(0,core.info)('No title changes needed');
-		return;
+		const inputs = getInputs();
+		const processedInputs = processInputs(inputs);
+		(0,core.startGroup)('Inputs');
+		(0,core.info)(JSON.stringify({inputs, processedInputs}, null, 2));
+		(0,core.endGroup)();
+
+		const newTitle = formatTitle(title, processedInputs);
+
+		// Validate new title
+		if (!newTitle || typeof newTitle !== 'string') {
+			throw new Error('Invalid title generated by formatTitle');
+		}
+
+		if (newTitle.length > 256) {
+			throw new Error(`New title is too long (${newTitle.length} characters). GitHub limits titles to 256 characters.`);
+		}
+
+		const changeNeeded = title !== newTitle;
+		(0,core.setOutput)('title', newTitle);
+		(0,core.setOutput)('changed', changeNeeded);
+
+		(0,core.info)(`Title: "${newTitle}"`);
+
+		if (title === newTitle) {
+			(0,core.info)('No title changes needed');
+			return;
+		}
+
+		(0,core.info)(`New title: "${newTitle}"`);
+
+		if (inputs.dryRun) {
+			(0,core.info)('Dry run: No changes applied');
+			return;
+		}
+
+		// Update the title with retry logic
+		await withRetry(async () => {
+			await octokit.issues.update({
+				owner, repo, issue_number: number, title: newTitle,
+			});
+		});
+
+		// Verify the update succeeded
+		const updatedTitle = await getCurrentTitle({owner, repo, number});
+		if (updatedTitle === newTitle) {
+			(0,core.info)('Title updated successfully');
+		} else {
+			(0,core.warning)(`Title update may not have succeeded. Expected: "${newTitle}", Got: "${updatedTitle}"`);
+		}
+	} catch (error) {
+		(0,core.error)(`Action failed: ${error.message}`);
+		if (error.stack) {
+			(0,core.error)(error.stack);
+		}
+
+		(0,core.setFailed)(error.message);
+		throw error;
 	}
-
-	(0,core.info)(`New title: "${newTitle}"`);
-
-	if (inputs.dryRun) {
-		(0,core.info)('Dry run: No changes applied');
-		return;
-	}
-
-	await octokit.issues.update({
-		owner, repo, issue_number: number, title: newTitle,
-	});
-
-	(0,core.info)('Title updated successfully');
 }
 
 // eslint-disable-next-line unicorn/prefer-top-level-await
