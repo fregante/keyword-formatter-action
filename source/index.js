@@ -9,6 +9,7 @@ import {
 import {Octokit} from '@octokit/action';
 import {formatTitle} from './format-title.js';
 import {getInputs, processInputs} from './inputs.js';
+import {getCacheData, saveCacheData, didUserUndoBotChange} from './bot-fight-prevention.js';
 
 const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH));
 
@@ -57,6 +58,15 @@ async function run() {
 	info(JSON.stringify({inputs, processedInputs}, null, 2));
 	endGroup();
 
+	// Check cache for bot fight prevention
+	const cacheData = await getCacheData(owner, repo, number);
+	if (cacheData.doNotTouch) {
+		info('Skipping: User has previously undone bot changes. Not touching this title again.');
+		setOutput('title', title);
+		setOutput('changed', false);
+		return;
+	}
+
 	const newTitle = formatTitle(title, processedInputs);
 	const changeNeeded = title !== newTitle;
 	setOutput('title', newTitle);
@@ -64,8 +74,28 @@ async function run() {
 
 	info(`Title: "${newTitle}"`);
 
+	// Check if user undid a bot change
+	if (didUserUndoBotChange(title, cacheData.lastBotTitle, newTitle)) {
+		info('User has undone the bot\'s formatting. Marking as do-not-touch.');
+		await saveCacheData(owner, repo, number, {
+			doNotTouch: true,
+			lastBotTitle: cacheData.lastBotTitle,
+		});
+		setOutput('title', title);
+		setOutput('changed', false);
+		return;
+	}
+
 	if (title === newTitle) {
 		info('No title changes needed');
+		// Update cache to track that we've seen this title
+		if (cacheData.lastBotTitle !== newTitle) {
+			await saveCacheData(owner, repo, number, {
+				doNotTouch: false,
+				lastBotTitle: newTitle,
+			});
+		}
+
 		return;
 	}
 
@@ -81,6 +111,12 @@ async function run() {
 	});
 
 	info('Title updated successfully');
+
+	// Save the new bot title to cache
+	await saveCacheData(owner, repo, number, {
+		doNotTouch: false,
+		lastBotTitle: newTitle,
+	});
 }
 
 // eslint-disable-next-line unicorn/prefer-top-level-await
