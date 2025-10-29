@@ -74,6 +74,19 @@ See [action.yml](./action.yml)
 
 See [action.yml](./action.yml)
 
+## Reliability Features
+
+This action is designed to be reliable and safe for use in popular repositories:
+
+- **Automatic Retries**: API calls automatically retry with exponential backoff on transient failures
+- **Input Validation**: Validates all inputs including regex patterns for ReDoS vulnerabilities
+- **Safety Limits**: Enforces limits on keyword counts (max 1000) and prefix length (max 100 chars)
+- **Idempotent**: Safe to run multiple times on the same issue/PR
+- **Race Condition Handling**: Fetches latest title before each update to handle concurrent actions
+- **Comprehensive Error Messages**: Clear, actionable error messages for debugging
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed troubleshooting guide and best practices.
+
 ## Related
 
 - [title-to-labels-action](https://github.com/fregante/title-to-labels-action) - Cleans up the titles of issues and PRs from common opening keywords.
