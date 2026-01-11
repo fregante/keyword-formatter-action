@@ -94,11 +94,47 @@ describe('formatTitle', () => {
 		expect(result).toBe('You had me `at hello`');
 	});
 
-	// TODO: https://github.com/fregante/keyword-formatter-action/issues/1
-	it.fails('should not wrap format twice even if the the word is in the middle of formatted string', () => {
+	it('should not wrap format twice even if the the word is in the middle of formatted string', () => {
 		const result = formatTitle('You had `me at hello`', {
 			keywords: ['at'],
 		});
 		expect(result).toBe('You had `me at hello`');
+	});
+
+	// Test cases from issue #1
+	it('should not format keyword at the beginning of backtick string', () => {
+		const result = formatTitle('`keyword post`', {
+			keywords: ['keyword'],
+		});
+		expect(result).toBe('`keyword post`');
+	});
+
+	it('should not format keyword at the end of backtick string', () => {
+		const result = formatTitle('`pre keyword`', {
+			keywords: ['keyword'],
+		});
+		expect(result).toBe('`pre keyword`');
+	});
+
+	it('should not format keyword in the middle of backtick string', () => {
+		const result = formatTitle('`pre keyword post`', {
+			keywords: ['keyword'],
+		});
+		expect(result).toBe('`pre keyword post`');
+	});
+
+	it('should format keyword outside backticks but leave backtick content alone', () => {
+		const result = formatTitle('keyword outside but `keyword inside`', {
+			keywords: ['keyword'],
+		});
+		expect(result).toBe('`keyword` outside but `keyword inside`');
+	});
+
+	it('should treat content after unmatched backtick as code (defensive behavior)', () => {
+		const result = formatTitle('keyword before `keyword after', {
+			keywords: ['keyword'],
+		});
+		// First keyword is formatted, but second is not (treated as code)
+		expect(result).toBe('`keyword` before `keyword after');
 	});
 });
