@@ -129,4 +129,12 @@ describe('formatTitle', () => {
 		});
 		expect(result).toBe('`keyword` outside but `keyword inside`');
 	});
+
+	it('should treat content after unmatched backtick as code (defensive behavior)', () => {
+		const result = formatTitle('keyword before `keyword after', {
+			keywords: ['keyword'],
+		});
+		// First keyword is formatted, but second is not (treated as code)
+		expect(result).toBe('`keyword` before `keyword after');
+	});
 });
